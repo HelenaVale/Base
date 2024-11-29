@@ -1,0 +1,774 @@
+import tkinter as tk
+from tkinter import PhotoImage, messagebox
+import datetime
+from tkinter import ttk
+import csv
+import os
+
+class JYDHI(tk.Tk): # JYDHI
+    def __init__(self):
+        super().__init__()
+        self.title("JYDHI INICIO")
+        self.state("zoomed")
+        self.iconbitmap('JYDHI_LOGO.ico')
+
+        self.ventana_principal = tk.Frame(self, bg="white")
+        self.ventana_principal.grid(padx=0, pady=0, sticky="nsew")
+
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+
+        self.ventanas = {}
+
+        # Crear y agregar las ventanas al diccionario
+        for V in (Ventana_1, Ventana_crear_contraseña, Ventana_recuperar_contraseña, Ventana_2, Ventana_3,Ventana_4, Ventana_5, Ventana_6, Ventana_8):
+            ventana = V(self.ventana_principal, self)
+            self.ventanas[V] = ventana
+            ventana.grid(row=0, column=0, sticky="nsew")
+        self.mostrar_ventana(Ventana_1)
+
+    def mostrar_ventana(self, ventana_clase):
+        ventana = self.ventanas[ventana_clase]
+        ventana.tkraise()
+
+        if ventana_clase == Ventana_1:
+            ventana.limpiar_campos()
+
+class Ventana_1(tk.Frame): # INICIO DE SESIÓN
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+        self.config(bg="white", width=1365, height=767)
+
+        # Logo
+        self.logo = PhotoImage(file='JYDHI_INICIO.png')
+        tk.Label(self, image=self.logo, bg='white').place(x=120, y=300)
+
+        # Marco para información de inicio de sesión
+        self.marco_informacion = tk.Frame(self, width=450, height=500, bg='white')
+        self.marco_informacion.place(x=720, y=140)
+
+        # Título de bienvenida
+        self.titulo_bienvenida = tk.Label(self.marco_informacion, text='BIENVENIDO A JYDHI', fg='#BE2623', bg='white', font=('Arial', 28))
+        self.titulo_bienvenida.place(x=30, y=5)
+
+        # Entrada de usuario
+        self.usuario = tk.Entry(self.marco_informacion, width=25, fg='#0E3746', border=0, bg='white', font=('Arial', 16))
+        self.usuario.place(x=30, y=100)
+        self.usuario.insert(0, 'Usuario')
+        self.usuario.bind('<FocusIn>', self.entrada_usuario)
+        self.usuario.bind('<FocusOut>', self.dejar_usuario)
+        tk.Frame(self.marco_informacion, width=400, height=1, bg='#0E3746').place(x=30, y=135)
+
+        # Entrada de contraseña (ocultar caracteres con '*')
+        self.contraseña = tk.Entry(self.marco_informacion, width=25, fg='#0E3746', border=0, bg='white', font=('Arial', 16))
+        self.contraseña.place(x=30, y=210)
+        self.contraseña.insert(0, 'Contraseña')
+        self.contraseña.bind('<FocusIn>', self.entrada_contraseña)
+        self.contraseña.bind('<FocusOut>', self.dejar_contraseña)
+        tk.Frame(self.marco_informacion, width=400, height=1, bg='#0E3746').place(x=30, y=245)
+
+        # Botón para iniciar sesión
+        tk.Button(self.marco_informacion, width=40, pady=7, text='Iniciar sesión', font=('Arial'), bg='#BE2623', fg='#F4F2EC', border=0, command=self.iniciar_sesion).place(x=45, y=310)
+
+        # Etiqueta de cuenta
+        etiqueta_sin_cuenta = tk.Label(self.marco_informacion, text='¿Aún no tienes una cuenta?', fg='#0E3746', bg='white', font=('Arial', 12))
+        etiqueta_sin_cuenta.place(x=70, y=380)
+
+        # Botón de crear cuenta
+        tk.Button(self.marco_informacion, width=12, text='Crear cuenta', font=('Arial', 12), border=0, bg='white', cursor='hand2', fg='#BE2623', command=self.crear_cuenta).place(x=270, y=378)
+
+        # Botón de olvidé mis credenciales
+        tk.Button(self.marco_informacion, width=40, text='Olvidé mis credenciales', font=('Arial', 12), border=0, bg='white', cursor='hand2', fg='#17617B', command=self.recuperar_cuenta).place(x=45, y=265)
+
+    def entrada_usuario(self, e):
+        self.usuario.delete(0, 'end')
+
+    def dejar_usuario(self, e):
+        nombre = self.usuario.get()
+        if nombre == '':
+            self.usuario.insert(0, 'Usuario')
+
+    def entrada_contraseña(self, e):
+        self.contraseña.delete(0, 'end')
+        self.contraseña.config(show='*')
+
+    def dejar_contraseña(self, e):
+        nombre = self.contraseña.get()
+        if nombre == '':
+            self.contraseña.insert(0, 'Contraseña')
+
+    def limpiar_campos(self):
+        self.usuario.delete(0, 'end')
+        self.usuario.insert(0, 'Usuario')
+        self.contraseña.delete(0, 'end')
+        self.contraseña.config(show='')
+        self.contraseña.insert(0, 'Contraseña')
+
+    def iniciar_sesion(self):
+        nombre_usuario = self.usuario.get()
+        contraseña = self.contraseña.get()
+
+        if nombre_usuario == 'admin' and contraseña == '1234':
+            self.controller.mostrar_ventana(Ventana_2)
+        else:
+            if nombre_usuario != 'admin' and contraseña != '1234':
+                messagebox.showerror('INCORRECTO', 'Credenciales de acceso incorrectas')
+            elif contraseña != '1234':
+                messagebox.showerror('INCORRECTO', 'Contraseña incorrecta')
+            elif nombre_usuario != 'admin':
+                messagebox.showerror('INCORRECTO', 'Usuario incorrecto')
+
+    def crear_cuenta(self):
+        self.controller.mostrar_ventana(Ventana_crear_contraseña)
+
+    def recuperar_cuenta(self):
+        self.controller.mostrar_ventana(Ventana_recuperar_contraseña)
+
+class Ventana_crear_contraseña(tk.Frame):
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+        self.config(bg="white")
+
+        contenido_frame = tk.Frame(self, bg="#F5F4F2", highlightbackground="#E0E0E0", highlightthickness=2)
+        contenido_frame.place(relx=0.5, rely=0.5, anchor="center", width=1100, height=540)
+
+        # Logo y título
+        logo_img = tk.PhotoImage(file="imagen_REcontra.png")  # Imagen del logo
+        logo_resized = logo_img.subsample(2, 2)  # por si les sirve esto reduce tamaño del logo
+        tk.Label(contenido_frame, image=logo_resized, bg="#F5F4F2").place(x=20, y=15)
+        self.logo_resized = logo_resized 
+
+        tk.Label(contenido_frame, text="JYDHI", font=("Arial", 24, "bold"), bg="#F5F4F2", fg="#0A3F44").place(x=70, y=20)
+        tk.Label(contenido_frame, text="CREAR CUENTA", font=("Arial", 20), bg="#F5F4F2", fg="#0A3F44").place(x=190, y=25)
+
+        # Icono de perfil
+        perfil_img = Image.open("Imagen_usuario.png")  
+        perfil_resized = perfil_img.resize((190, 190))  # ajusta las dimensiones (Pillow)
+        perfil_resized = ImageTk.PhotoImage(perfil_resized)
+        tk.Label(contenido_frame, image=perfil_resized, bg="#F5F4F2").place(x=70, y=100)
+        self.perfil_img = perfil_resized 
+
+        # Para daots de entrada
+        tk.Label(contenido_frame, text="Nombre:", font=("Arial", 14), bg="#F5F4F2", fg="#0A3F44").place(x=300, y=130)
+        tk.Entry(contenido_frame, font=("Arial", 12), width=50).place(x=380, y=131)
+
+        tk.Label(contenido_frame, text="Turno:", font=("Arial", 14), bg="#F5F4F2", fg="#0A3F44").place(x=300, y=190)
+        tk.Entry(contenido_frame, font=("Arial", 12), width=52).place(x=361, y=191)
+
+        tk.Label(contenido_frame, text="Ingrese clave para el registro:", font=("Arial", 14), bg="#F5F4F2", fg="#0A3F44").place(x=300, y=250)
+        tk.Entry(contenido_frame, font=("Arial", 12), width=30, show="*").place(x=558, y=251)
+
+        # para usuario y contraseña
+        tk.Label(contenido_frame, text="Usuario:", font=("Arial", 14), bg="#F5F4F2", fg="red").place(x=150, y=350)
+        tk.Entry(contenido_frame, font=("Arial", 12), width=45).place(x=225, y=351)
+
+        tk.Label(contenido_frame, text="Ingrese una contraseña:", font=("Arial", 14), bg="#F5F4F2", fg="red").place(x=150, y=400)
+        tk.Entry(contenido_frame, font=("Arial", 12), width=30, show="*").place(x=359, y=401)
+
+        # Botones 
+        tk.Button(contenido_frame, text="Verificar clave", font=("Arial", 12), bg="#0A3F44", fg="white", command=self.verificar_clave).place(x=837, y=246)
+        tk.Button(contenido_frame, text="Crear cuenta", font=("Arial", 12), bg="#0A3F44", fg="white", command=self.crear_cuenta).place(x=640, y=396)
+
+        # Botón para regresar a Iniciar sesión
+        tk.Button(
+            contenido_frame,
+            text="Regresar a Iniciar sesión",
+            font=("Arial", 12),
+            bg='#BE2623', fg='#F4F2EC', border=0,
+            command=lambda: self.controller.mostrar_ventana(Ventana_1)
+        ).place(x=50, y=500)
+
+    def verificar_clave(self):
+        print("Verificando clave...")
+
+    def crear_cuenta(self):
+        print("Creando cuenta...")
+
+class Ventana_recuperar_contraseña(tk.Frame):
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+        self.config(bg="white")
+
+        contenido_frame = tk.Frame(self, bg="#F5F4F2", highlightbackground="#E0E0E0", highlightthickness=2)
+        contenido_frame.place(relx=0.5, rely=0.5, anchor="center", width=1100, height=540)
+
+        # Logo y título
+        logo_img = tk.PhotoImage(file="imagen_REcontra.png")  
+        logo_resized = logo_img.subsample(2, 2)  # por si les sirve esto reduce tamaño del logo
+        tk.Label(contenido_frame, image=logo_resized, bg="#F5F4F2").place(x=20, y=15)
+        self.logo_resized = logo_resized  
+
+        tk.Label(contenido_frame, text="JYDHI", font=("Arial", 24, "bold"), bg="#F5F4F2", fg="#0A3F44").place(x=70, y=20)
+        tk.Label(contenido_frame, text="RECUPERAR CUENTA", font=("Arial", 20), bg="#F5F4F2", fg="#0A3F44").place(x=190, y=25)
+
+        # Icono de perfil
+        perfil_img = Image.open("Imagen_usuario.png")
+        perfil_resized = perfil_img.resize((190, 190))  # ajusta las dimensiones
+        perfil_resized = ImageTk.PhotoImage(perfil_resized)
+        tk.Label(contenido_frame, image=perfil_resized, bg="#F5F4F2").place(x=70, y=100)
+        self.perfil_img = perfil_resized
+
+        # Datos de entrada
+        tk.Label(contenido_frame, text="Nombre:", font=("Arial", 14), bg="#F5F4F2", fg="#0A3F44").place(x=300, y=100)
+        tk.Entry(contenido_frame, font=("Arial", 12), width=51).place(x=381, y=101)
+
+        tk.Label(contenido_frame, text="Turno:", font=("Arial", 14), bg="#F5F4F2", fg="#0A3F44").place(x=300, y=150)
+        tk.Entry(contenido_frame, font=("Arial", 12), width=53).place(x=361, y=151)
+
+        tk.Label(contenido_frame, text="Usuario:", font=("Arial", 14), bg="#F5F4F2", fg="#0A3F44").place(x=300, y=200)
+        tk.Entry(contenido_frame, font=("Arial", 12), width=51, show="*").place(x=379, y=201)
+
+        tk.Label(contenido_frame, text="Ingrese clave de recuperación:", font=("Arial", 14), bg="#F5F4F2", fg="#0A3F44").place(x=300, y=250)
+        tk.Entry(contenido_frame, font=("Arial", 12), width=30, show="*").place(x=568, y=251)
+
+        # Para usuario y contraseña
+        tk.Label(contenido_frame, text="Usuario:", font=("Arial", 14), bg="#F5F4F2", fg="red").place(x=300, y=350)
+        #tk.Entry(contenido_frame, font=("Arial", 12), width=30).place(x=374, y=351)
+
+        tk.Label(contenido_frame, text="Contraseña:", font=("Arial", 14), bg="#F5F4F2", fg="red").place(x=300, y=400)
+        #tk.Entry(contenido_frame, font=("Arial", 12), width=30, show="*").place(x=507, y=401)
+
+        # Boton
+        tk.Button(contenido_frame, text="Verificar clave", font=("Arial", 12), bg="#0A3F44", fg="white", command=self.verificar_clave).place(x=870, y=247)
+
+        # Botón para regresar a Iniciar sesión
+        tk.Button(
+            contenido_frame,
+            text="Regresar a Iniciar sesión",
+            font=("Arial", 12),
+            bg='#BE2623', fg='#F4F2EC', border=0,
+            command=lambda: self.controller.mostrar_ventana(Ventana_1)
+        ).place(x=50, y=500)
+
+    def verificar_clave(self):
+        print("Verificando clave...")
+
+class Ventana_2(tk.Frame): # MENÚ PRINCIPAL
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+        self.config(bg="#EAE8DC")
+
+        # Frames :)
+        self.marco_menu = tk.Frame(self, width=221, height=767, bg='white')
+        self.marco_menu.place(x=0, y=0)
+        self.marco_notificaciones = tk.Frame(self, width =880, height=160, bg='white', bd=1, highlightbackground='#0E3746', highlightthickness=1)
+        self.marco_notificaciones.place(x=420, y=500)
+
+        # Imagenes
+        self.logo = PhotoImage(file='inicio_logo.png')
+        tk.Label(self, image=self.logo, bg='white').place(x=50, y=80)
+        self.logo2 = PhotoImage(file='inicio_usuario_rojo.png')
+        tk.Label(self, image=self.logo2, bg='#EAE8DC').place(x=260, y=100)
+        self.logo3 = PhotoImage(file='inicio_notificaciones.png')
+        tk.Label(self, image=self.logo3, bg='#EAE8DC').place(x=275, y=340)
+        self.logo4 = PhotoImage(file='inicio_registrosyact.png')
+        tk.Label(self, image=self.logo4, bg='#EAE8DC').place(x=275, y=425)
+        self.logo5 = PhotoImage(file='inicio_imag_regs.png')
+        tk.Label(self, image=self.logo5, bg='#EAE8DC').place(x=275, y=510)
+
+        # Titulos
+        self.titulo_inicio = tk.Label(self, text='INICIO', fg='#BE2623', bg='#EAE8DC', font=('Arial', 24))
+        self.titulo_inicio.place(x=280, y=40)
+        self.titulo_usuario = tk.Label(self, text='HOLA USUARIO', fg='#BE2623', bg='#EAE8DC', font=('Arial', 20))
+        self.titulo_usuario.place(x=370, y=125)
+        self.hora_fecha = tk.Label(self, text='Fecha y hora: ', fg='#0E3746', bg='#EAE8DC', font=('Arial', 18))
+        self.hora_fecha.place(x=800, y=130)
+        self.nombre = tk.Label(self, text='Nombre:', fg='#0E3746', bg='#EAE8DC', font=('Arial', 18))
+        self.nombre.place(x=280, y=210)
+        self.turno = tk.Label(self, text='Turno:', fg='#0E3746', bg='#EAE8DC', font=('Arial', 18))
+        self.turno.place(x=280, y=270)
+
+        # Reloj
+        self.hora_fecha = tk.Label(self, fg='#0E3746', bg='#EAE8DC', font=('Arial', 18))
+        self.hora_fecha.place(x=960, y=130)
+        self.actualizar_reloj()
+
+        # Botones
+        self.imagen_icono = PhotoImage(file='inicio_boton.png')
+        self.boton = tk.Button(self.marco_menu, width=221, height=80, text="       Inicio", image=self.imagen_icono,  compound="left", font=("Arial", 14), fg="#0E3746", bg="#EAE8DC", border=0, cursor='hand2')
+        self.boton.place(x=0, y=300)
+        self.imagen_icono2 = PhotoImage(file='inicio_registros.png')
+        self.boton2 = tk.Button(self.marco_menu, width=221, height=80, text="    Registro", image=self.imagen_icono2,  compound="left", font=("Arial", 14), fg="#0E3746", bg="white", border=0, command=lambda: controller.mostrar_ventana(Ventana_3))
+        self.boton2.place(x=0, y=400)
+        tk.Button(self.marco_menu, width=18, pady=7, text='Cerrar sesión', font=('Arial'), bg='#BE2623', fg='white', border=0, activebackground='#EAE8DC' ,command=lambda: controller.mostrar_ventana(Ventana_1)).place(x=25, y=600)
+
+    def actualizar_reloj(self):
+        hora_actual = datetime.datetime.now().strftime('%d-%m-%Y  /  %H:%M:%S')
+        self.hora_fecha.config(text=hora_actual)
+        self.after(1000, self.actualizar_reloj)
+
+class Ventana_3(tk.Frame): # DESPLEGAR MENÚ
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+        self.config(bg="#EAE8DC")
+
+        # Frames :)
+        self.marco_menu = tk.Frame(self, width=221, height=767, bg='white')
+        self.marco_menu.place(x=0, y=0)
+        self.marco_notificaciones = tk.Frame(self, width =880, height=160, bg='white', bd=1, highlightbackground='#0E3746', highlightthickness=1)
+        self.marco_notificaciones.place(x=420, y=500)
+
+        # Imagenes
+        self.logo = PhotoImage(file='inicio_logo.png')
+        tk.Label(self, image=self.logo, bg='white').place(x=50, y=80)
+        self.logo2 = PhotoImage(file='inicio_usuario_rojo.png')
+        tk.Label(self, image=self.logo2, bg='#EAE8DC').place(x=260, y=100)
+        self.logo3 = PhotoImage(file='inicio_notificaciones.png')
+        tk.Label(self, image=self.logo3, bg='#EAE8DC').place(x=275, y=340)
+        self.logo4 = PhotoImage(file='inicio_registrosyact.png')
+        tk.Label(self, image=self.logo4, bg='#EAE8DC').place(x=275, y=425)
+        self.logo5 = PhotoImage(file='inicio_imag_regs.png')
+        tk.Label(self, image=self.logo5, bg='#EAE8DC').place(x=275, y=510)
+
+        # Titulos
+        self.titulo_inicio = tk.Label(self, text='INICIO', fg='#BE2623', bg='#EAE8DC', font=('Arial', 24))
+        self.titulo_inicio.place(x=280, y=40)
+        self.titulo_usuario = tk.Label(self, text='HOLA USUARIO', fg='#BE2623', bg='#EAE8DC', font=('Arial', 20))
+        self.titulo_usuario.place(x=370, y=125)
+        self.hora_fecha = tk.Label(self, text='Fecha y hora: ', fg='#0E3746', bg='#EAE8DC', font=('Arial', 18))
+        self.hora_fecha.place(x=800, y=130)
+        self.nombre = tk.Label(self, text='Nombre:', fg='#0E3746', bg='#EAE8DC', font=('Arial', 18))
+        self.nombre.place(x=280, y=210)
+        self.turno = tk.Label(self, text='Turno:', fg='#0E3746', bg='#EAE8DC', font=('Arial', 18))
+        self.turno.place(x=280, y=270)
+
+        # Reloj
+        self.hora_fecha = tk.Label(self, fg='#0E3746', bg='#EAE8DC', font=('Arial', 18))
+        self.hora_fecha.place(x=960, y=130)
+        self.actualizar_reloj()
+
+        # Botones
+        self.imagen_icono = PhotoImage(file='inicio_boton2.png')
+        self.boton = tk.Button(self.marco_menu, width=221, height=80, text="       Inicio", image=self.imagen_icono,  compound="left", font=("Arial", 14), fg="#0E3746", bg="white", border=0, command=lambda: controller.mostrar_ventana(Ventana_2))
+        self.boton.place(x=0, y=300)
+        self.imagen_icono2 = PhotoImage(file='inicio_registros2.png')
+        self.boton2 = tk.Button(self.marco_menu, width=221, height=80, text="    Registro", image=self.imagen_icono2,  compound="left", font=("Arial", 14), fg="#0E3746", bg="#EAE8DC", border=0, command=self.desplegar_menu)
+        self.boton2.place(x=0, y=400)
+        tk.Button(self.marco_menu, width=18, pady=7, text='Cerrar sesión', font=('Arial'), bg='#BE2623', fg='white', border=0, activebackground='#EAE8DC' ,command=lambda: controller.mostrar_ventana(Ventana_1)).place(x=25, y=600)
+
+        self.menu_emergente = tk.Menu(self, tearoff=0, font=("Arial", 10), fg="#0E3746", bg="white")
+        self.menu_emergente.add_command(label="Crear registro", command=self.opcion1)
+        self.menu_emergente.add_command(label="Abrir registro", command=self.opcion2)
+        self.menu_emergente.add_command(label="Actualizar registro", command=self.opcion3)
+
+    def desplegar_menu(self):
+        x = self.boton2.winfo_rootx()
+        y = self.boton2.winfo_rooty() + self.boton2.winfo_height()
+        desplazamiento_x = 60
+        desplazamiento_y = 10
+        x += desplazamiento_x
+        y += desplazamiento_y
+        self.menu_emergente.tk_popup(x, y)
+
+    def opcion1(self):
+        print("Opción 1 seleccionada")
+        self.controller.mostrar_ventana(Ventana_5)
+
+    def opcion2(self):
+        print("Opción 2 seleccionada")
+        self.controller.mostrar_ventana(Ventana_4)
+
+    def opcion3(self):
+        print("Opción 3 seleccionada")
+        self.controller.mostrar_ventana(Ventana_6)
+
+    def actualizar_reloj(self):
+        hora_actual = datetime.datetime.now().strftime('%d-%m-%Y  /  %H:%M:%S')
+        self.hora_fecha.config(text=hora_actual)
+        self.after(1000, self.actualizar_reloj)
+
+
+class Ventana_4(tk.Frame):  # BUSCAR REGISTRO
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+        self.config(bg="#EAE8DC")
+
+        # Frames :)
+        self.marco_menu = tk.Frame(self, width=221, height=767, bg='white')
+        self.marco_menu.place(x=0, y=0)
+        self.marco_notificaciones = tk.Frame(self, width =420, height=60, bg='white', bd=1, highlightbackground='#0E3746', highlightthickness=1)
+        self.marco_notificaciones.place(x=600, y=520)
+
+        self.marco_informacion = tk.Frame(self, width=400, height=40, bg='white')
+        self.marco_informacion.place(x=760, y=150)
+        self.marco_informacion1 = tk.Frame(self, width=400, height=40, bg='white')
+        self.marco_informacion1.place(x=760, y=200)
+        self.marco_informacion2 = tk.Frame(self, width=400, height=40, bg='white')
+        self.marco_informacion2.place(x=760, y=250)
+
+
+        # Imagenes
+        self.logo = PhotoImage(file='inicio_logo.png')
+        tk.Label(self, image=self.logo, bg='white').place(x=50, y=80)
+        self.logo2 = PhotoImage(file='usuario_buscar.png')
+        tk.Label(self, image=self.logo2, bg='#EAE8DC').place(x=250, y=130)
+        self.logo4 = PhotoImage(file='Cuadro_BuscarRegistro.png')
+        tk.Label(self, image=self.logo4, bg='#EAE8DC').place(x=375, y=325)
+        self.logo5 = PhotoImage(file='inicio_imag_regs.png')
+        tk.Label(self, image=self.logo5, bg='#EAE8DC').place(x=275, y=380)
+
+        self.nombre = tk.Entry(self.marco_informacion, width=25, fg='#0E3746', border=0, bg='white', font=('Arial', 14))
+        self.nombre.place(x=20, y=10)
+        self.nombre.insert(0, ' ')
+        self.turno = tk.Entry(self.marco_informacion1, width=25, fg='#0E3746', border=0, bg='white', font=('Arial', 14))
+        self.turno.place(x=20, y=10)
+        self.turno.insert(0, ' ')
+        self.usuario = tk.Entry(self.marco_informacion2, width=25, fg='#877D60', border=0, bg='white', font=('Arial', 12))
+        self.usuario.place(x=20, y=10)
+        self.usuario.insert(0, '')
+    
+
+        # Titulos
+        self.titulo_inicio = tk.Label(self, text='BUSCAR REGISTRO DE SIGNOS VITALES', fg='#BE2623', bg='#EAE8DC', font=('Arial', 24))
+        self.titulo_inicio.place(x=280, y=40)
+        self.nombre = tk.Label(self, text='Nombre:', fg='#0E3746', bg='#EAE8DC', font=('Arial', 18))
+        self.nombre.place(x=650, y=150)
+        self.turno = tk.Label(self, text='Turno:', fg='#0E3746', bg='#EAE8DC', font=('Arial', 18))
+        self.turno.place(x=650, y=200)
+        self.fecha = tk.Label(self, text='Fecha:', fg='#0E3746', bg='#EAE8DC', font=('Arial', 18))
+        self.fecha.place(x=650, y=250)
+        self.usuario = tk.Label(self, text='Usuario:', fg='#0E3746', bg='#EAE8DC', font=('Arial', 18))
+        self.usuario.place(x=380, y=150)
+        self.usuario_pa = tk.Label(self, text='Usuario_Pa:', fg='#0E3746', bg='#EAE8DC', font=('Arial', 18))
+        self.usuario_pa.place(x=430, y=405)
+        self.buscar = tk.Label(self, text='Buscar registro:', fg='#0E3746', bg='#EAE8DC', font=('Arial', 15))
+        self.buscar.place(x=430, y=455)
+
+        self.hora_fecha = tk.Label(self, fg='#0E3746',bg='white', font=('Arial', 18))
+        self.hora_fecha.place(x=820, y=255)
+       # self.actualizar_reloj()
+
+
+        # Botones
+        self.imagen_icono = PhotoImage(file='inicio_boton2.png')
+        self.boton = tk.Button(self.marco_menu, width=221, height=80, text="       Inicio", image=self.imagen_icono,  compound="left", font=("Arial", 14), fg="#0E3746", bg="white", border=0, command=lambda: controller.mostrar_ventana(Ventana_2))
+        self.boton.place(x=0, y=300)
+        self.imagen_icono2 = PhotoImage(file='inicio_registros2.png')
+        tk.Button(self.marco_menu, width=18, pady=7, text='Cerrar sesión', font=('Arial'), bg='#BE2623', fg='white', border=0, activebackground='#EAE8DC' ,command=lambda: controller.mostrar_ventana(Ventana_2)).place(x=25, y=600)
+        tk.Button(self, width=18, pady=7, text='Exportar', font=('Arial'), bg='#17617B', fg='white', border=0,command=lambda: controller.mostrar_ventana(Ventana_1)).place(x=710, y=600)
+        self.boton2 = tk.Button(self.marco_menu, width=221, height=80, text="    Registro", image=self.imagen_icono2,  compound="left", font=("Arial", 14), fg="#0E3746", bg="#EAE8DC", border=0, command= self.desplegar_menu)
+        self.boton2.place(x=0, y=400)
+       
+        self.menu_emergente = tk.Menu(self, tearoff=0, font=("Arial", 10), fg="#0E3746", bg="white")
+        self.menu_emergente.add_command(label="Crear registro", command=self.opcion1)
+        self.menu_emergente.add_command(label="Abrir registro", command=self.opcion2)
+        self.menu_emergente.add_command(label="Actualizar registro", command=self.opcion3)
+
+    def desplegar_menu(self):
+        x = self.boton2.winfo_rootx()
+        y = self.boton2.winfo_rooty() + self.boton2.winfo_height()
+        desplazamiento_x = 60
+        desplazamiento_y = 10
+        x += desplazamiento_x
+        y += desplazamiento_y
+        self.menu_emergente.tk_popup(x, y)
+
+    def opcion1(self):
+        print("Opción 1 seleccionada")
+        self.controller.mostrar_ventana(Ventana_5)
+
+    def opcion2(self):
+        print("Opción 2 seleccionada")
+        self.controller.mostrar_ventana(Ventana_4)
+
+    def opcion3(self):
+        print("Opción 3 seleccionada")
+        self.controller.mostrar_ventana(Ventana_6)
+
+    def monitoreo(self):
+        self.controller.mostrar_ventana(Ventana_8)
+
+
+        
+
+class Ventana_5(tk.Frame): # CREAR REGISTRO
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+        self.config(bg="#EAE8DC")
+       
+
+        # Frames :)
+        self.marco_menu = tk.Frame(self, width=221, height=767, bg='white')
+        self.marco_menu.place(x=0, y=0)
+        self.datos_paciente = tk.Frame(self, width =780, height=175, bg='white', bd=1, highlightbackground='#0E3746', highlightthickness=1)
+        self.datos_paciente.place(x=550, y=150)
+        self.usuario = PhotoImage(file='inicio_boton.png')
+        tk.Label(self, image=self.usuario, bg='#EAE8DC').place(x=290, y=500)
+
+        # Imagenes
+        self.logo = PhotoImage(file='inicio_logo.png')
+        tk.Label(self, image=self.logo, bg='white').place(x=50, y=80)
+        self.usuario = PhotoImage(file='usuario_buscar.png')
+        tk.Label(self, image=self.usuario, bg='#EAE8DC').place(x=320, y=440)
+        self.logo5 = PhotoImage(file='inicio_imag_regs.png')
+        tk.Label(self, image=self.logo5, bg='#EAE8DC').place(x=325, y=150)
+
+        # Titulos
+        self.titulo_inicio = tk.Label(self, text='CREAR NUEVO REGISTRO', fg='#BE2623', bg='#EAE8DC', font=('Arial', 24))
+        self.titulo_inicio.place(x=280, y=40)
+
+        # Botones
+        self.imagen_icono = PhotoImage(file='inicio_boton2.png')
+        self.boton = tk.Button(self.marco_menu, width=221, height=80, text="       Inicio", image=self.imagen_icono,  compound="left", font=("Arial", 14), fg="#0E3746", bg="white", border=0, command=lambda: controller.mostrar_ventana(Ventana_2))
+        self.boton.place(x=0, y=300)
+        self.imagen_icono2 = PhotoImage(file='inicio_registros2.png')
+        self.boton2 = tk.Button(self.marco_menu, width=221, height=80, text="    Registro", image=self.imagen_icono2,  compound="left", font=("Arial", 14), fg="#0E3746", bg="#EAE8DC", border=0, command=self.desplegar_menu)
+        self.boton2.place(x=0, y=400)
+        tk.Button(self.marco_menu, width=18, pady=7, text='Cerrar sesión', font=('Arial'), bg='#BE2623', fg='white', border=0, activebackground='#EAE8DC' ,command=lambda: controller.mostrar_ventana(Ventana_1)).place(x=25, y=600)
+        boton_actualizar = tk.Button(self, text="Crear registro", width=25, bg='#17617B', fg="white", font=("Arial", 18), command=self.guardar_datos)
+        boton_actualizar.place(x=975, y=400)
+        boton_actualizar = tk.Button(self, text="Monitoreo", width=25, bg='#0e3746', fg="white", font=("Arial", 18), command=self.monitoreo )
+        boton_actualizar.place(x=975, y=550)
+      
+        self.menu_emergente = tk.Menu(self, tearoff=0, font=("Arial", 10), fg="#0E3746", bg="white")
+        self.menu_emergente.add_command(label="Crear registro", command=self.opcion1)
+        self.menu_emergente.add_command(label="Abrir registro", command=self.opcion2)
+        self.menu_emergente.add_command(label="Actualizar registro", command=self.opcion3)
+
+        
+            
+        #Pedir datos
+  
+        label_nombre = tk.Label(self, text="Nombre completo:",font=("Arial",15), bg="white", fg="black")
+        label_nombre.place(x=575, y=175)
+        self.entry_nombre = tk.Entry(self, width=30, font=("Arial", 14), bg="white", fg="black")
+        self.entry_nombre.place (x=750, y=175)
+        
+       
+
+        label_sexo = tk.Label(self, text="Sexo:",font=("Arial",15), bg="white", fg="black")
+        label_sexo.place(x=575, y=225)
+        self.combo_sexo = ttk.Combobox(self, values=["Masculino", "Femenino", "Otro"],width=28, font=("Arial", 14))
+        self.combo_sexo.place(x=750, y=225)
+        self.combo_sexo.set("Masculino")  
+
+        label_edad = tk.Label(self, text="Edad:",font=("Arial",15), bg="white", fg="black")
+        label_edad.place(x=575, y=275)
+        self.entry_edad = tk.Entry(self,width=30, font=("Arial", 14), bg="white", fg="black")
+        self.entry_edad.place(x=750, y=275)
+
+         
+
+        #Guardar datos
+    def guardar_datos(self):    
+        nombre = self.entry_nombre.get()
+        sexo = self.combo_sexo.get()
+        edad = self.entry_edad.get()
+
+        if nombre and sexo and edad:
+            nombre_archivo = self.crear_nombre_archivo(nombre)
+            with open(nombre_archivo, mode="a", newline="") as archivo:
+                escritor_csv = csv.writer(archivo)
+                escritor_csv.writerow([nombre, sexo, edad])
+               
+            # Limpiar los campos
+            self.entry_nombre.delete(0, tk.END)
+            self.entry_edad.delete(0, tk.END)
+            self.combo_sexo.set("Masculino")
+
+ 
+    def crear_nombre_archivo(self, nombre):
+        nombre_archivo = nombre.strip().replace(" ", "_")  
+       
+        if not nombre_archivo.endswith(".csv"): #Nombre del archivo termine en ".csv"
+            nombre_archivo += ".csv"
+
+        # Verificar si el archivo ya existe, y si es así, añadir un número al final
+        contador = 1
+        archivo_final = nombre_archivo
+        while os.path.exists(archivo_final):
+            archivo_final = f"{nombre_archivo[:-4]}_{contador}.csv"
+            contador += 1
+
+        return archivo_final
+
+    def desplegar_menu(self):
+        x = self.boton2.winfo_rootx()
+        y = self.boton2.winfo_rooty() + self.boton2.winfo_height()
+        desplazamiento_x = 60
+        desplazamiento_y = 10
+        x += desplazamiento_x
+        y += desplazamiento_y
+        self.menu_emergente.tk_popup(x, y)
+
+    def opcion1(self):
+        print("Opción 1 seleccionada")
+        self.controller.mostrar_ventana(Ventana_5)
+
+    def opcion2(self):
+        print("Opción 2 seleccionada")
+        self.controller.mostrar_ventana(Ventana_4)
+
+    def opcion3(self):
+        print("Opción 3 seleccionada")
+        self.controller.mostrar_ventana(Ventana_6)
+
+    def monitoreo(self):
+        self.controller.mostrar_ventana(Ventana_8)
+
+
+class Ventana_6(tk.Frame):# ACTUALIZAR REGISTRO
+
+    def __init__(self, parent, controller):
+
+        super().__init__(parent)
+        self.controller = controller
+        self.config(bg="#EAE8DC")
+
+        # Frames :)
+        self.marco_menu = tk.Frame(self, width=221, height=767, bg='white')
+        self.marco_menu.place(x=0, y=0)
+        
+
+        # Imagenes
+        self.logo = PhotoImage(file='inicio_logo.png')
+        tk.Label(self, image=self.logo, bg='white').place(x=50, y=80)
+        self
+        self.logo6 = PhotoImage(file='documento.png')
+        tk.Label(self, image=self.logo6, bg='#EAE8DC').place(x=330, y=550)
+
+        # Titulos
+        self.titulo_inicio = tk.Label(self, text='ACTUALIZAR REGISTROS DE SIGNOS VITALES', fg='#BE2623', bg='#EAE8DC', font=('Arial', 24))
+        self.titulo_inicio.place(x=280, y=40)
+        # Sección
+        barra_titulo = tk.Label(self, text="Registro de paciente", font=("Arial", 14, "bold"), fg="white", bg="#0A3849", width=85, anchor="center")
+        #barra_titulo.pack(pady=(150, 100))
+        barra_titulo.place(x=260, y=150)
+        
+        self.nombre = tk.Label(self, text='Nombre del paciente:', fg='#0E3746', bg='#EAE8DC', font=('Arial', 18))
+        self.nombre.place(x=420, y=230)
+        self.usuario_Pa = tk.Label(self, text='Usuario_Pa:', fg='#0E3746', bg='#EAE8DC', font=('Arial', 18))
+        self.usuario_Pa.place(x=420, y=300)
+        self.edad = tk.Label(self, text='Edad:', fg='#0E3746', bg='#EAE8DC', font=('Arial', 18))
+        self.edad.place(x=870, y=230)
+        self.sexo = tk.Label(self, text='Sexo:', fg='#0E3746', bg='#EAE8DC', font=('Arial', 18))
+        self.sexo.place(x=870, y=300)
+        self.turno = tk.Label(self, text='Turno de primer registro:', fg='#0E3746', bg='#EAE8DC', font=('Arial', 18))
+        self.turno.place(x=280, y=370)
+        self.actmonitoreo = tk.Label(self, text='*Se notificará la actualización y exportación al turno principal.', fg='#0E3746', bg='#EAE8DC', font=('Arial', 16, 'italic'))
+        self.actmonitoreo.place(x=570, y=630)
+
+        # Actualizaciones
+        self.ultimact = tk.Label(self, text='Última actualización:', fg='#BE2623', bg='#EAE8DC', font=('Arial', 18))
+        self.ultimact.place(x=280, y=430)
+        self.turnact = tk.Label(self, text='Turno de última actualización:', fg='#BE2623', bg='#EAE8DC', font=('Arial', 18))
+        self.turnact.place(x=280, y=490)
+       
+
+        # Botones
+        self.imagen_icono = PhotoImage(file='inicio_boton2.png')
+        self.boton = tk.Button(self.marco_menu, width=221, height=80, text="       Inicio", image=self.imagen_icono,  compound="left", font=("Arial", 14), fg="#0E3746", bg="white", border=0, command=lambda: controller.mostrar_ventana(Ventana_2))
+        self.boton.place(x=0, y=300)
+        self.imagen_icono2 = PhotoImage(file='inicio_registros2.png')
+        self.boton2 = tk.Button(self.marco_menu, width=221, height=80, text="    Registro", image=self.imagen_icono2,  compound="left", font=("Arial", 14), fg="#0E3746", bg="#EAE8DC", border=0, command=self.desplegar_menu)
+        self.boton2.place(x=0, y=400)
+        tk.Button(self.marco_menu, width=18, pady=7, text='Cerrar sesión', font=('Arial'), bg='#BE2623', fg='white', border=0, activebackground='#EAE8DC' ,command=lambda: controller.mostrar_ventana(Ventana_8)).place(x=25, y=600)
+        boton_actualizar = tk.Button(self, text="Actualizar Monitoreo", command=lambda: self.controller.mostrar_ventana(Ventana_8), width=40, bg='#17617B', fg="white", font=("Arial", 12))
+        boton_actualizar.place(x=680, y=580)
+        
+        
+
+        self.menu_emergente = tk.Menu(self, tearoff=0, font=("Arial", 10), fg="#0E3746", bg="white")
+        self.menu_emergente.add_command(label="Crear registro", command=self.opcion1)
+        self.menu_emergente.add_command(label="Abrir registro", command=self.opcion2)
+        self.menu_emergente.add_command(label="Actualizar registro", command=self.opcion3)
+
+    def desplegar_menu(self):
+        x = self.boton2.winfo_rootx()
+        y = self.boton2.winfo_rooty() + self.boton2.winfo_height()
+        desplazamiento_x = 60
+        desplazamiento_y = 10
+        x += desplazamiento_x
+        y += desplazamiento_y
+        self.menu_emergente.tk_popup(x, y)
+
+    def opcion1(self):
+        print("Opción 1 seleccionada")
+        self.controller.mostrar_ventana(Ventana_5)
+
+    def opcion2(self):
+        print("Opción 2 seleccionada")
+        self.controller.mostrar_ventana(Ventana_4)
+
+    def opcion3(self):
+        print("Opción 3 seleccionada")
+        self.controller.mostrar_ventana(Ventana_6)
+
+
+#class Ventana_7(tk.Frame): # CREAR Y RECUPERAR CUENTA
+
+class Ventana_8(tk.Frame): #MONITOREO
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+        self.config(bg="#EAE8DC")
+
+        # Frames :)
+        self.marco_menu = tk.Frame(self, width=221, height=767, bg='white')
+        self.marco_menu.place(x=0, y=0)
+        self.marco_notificaciones = tk.Frame(self, width =880, height=160, bg='white', bd=1, highlightbackground='#0E3746', highlightthickness=1)
+        self.marco_notificaciones.place(x=420, y=500)
+
+        # Imagenes
+        self.logo = PhotoImage(file='inicio_logo.png')
+        tk.Label(self, image=self.logo, bg='white').place(x=50, y=80)
+
+        # Titulos
+        self.titulo_inicio = tk.Label(self, text='MONITOR DE SIGNOS VITALES', fg='#BE2623', bg='#EAE8DC', font=('Arial', 24))
+        self.titulo_inicio.place(x=280, y=40)
+        self.titulo_usuario = tk.Label(self, text='HOLA USUARIO', fg='#BE2623', bg='#EAE8DC', font=('Arial', 20))
+        self.titulo_usuario.place(x=370, y=125)
+        self.hora_fecha = tk.Label(self, text='Fecha y hora: ', fg='#0E3746', bg='#EAE8DC', font=('Arial', 18))
+        self.hora_fecha.place(x=800, y=130)
+        self.nombre = tk.Label(self, text='Nombre:', fg='#0E3746', bg='#EAE8DC', font=('Arial', 18))
+        self.nombre.place(x=280, y=210)
+        self.turno = tk.Label(self, text='Turno:', fg='#0E3746', bg='#EAE8DC', font=('Arial', 18))
+        self.turno.place(x=280, y=270)
+
+
+        # Botones
+
+        self.imagen_icono = PhotoImage(file='inicio_boton2.png')
+        self.boton = tk.Button(self.marco_menu, width=221, height=80, text="       Inicio", image=self.imagen_icono,  compound="left", font=("Arial", 14), fg="#0E3746", bg="white", border=0, command=lambda: controller.mostrar_ventana(Ventana_2))
+        self.boton.place(x=0, y=300)
+        self.imagen_icono2 = PhotoImage(file='inicio_registros2.png')
+        self.boton2 = tk.Button(self.marco_menu, width=221, height=80, text="    Registro", image=self.imagen_icono2,  compound="left", font=("Arial", 14), fg="#0E3746", bg="#EAE8DC", border=0, command=self.desplegar_menu)
+        self.boton2.place(x=0, y=400)
+        tk.Button(self.marco_menu, width=18, pady=7, text='Cerrar sesión', font=('Arial'), bg='#BE2623', fg='white', border=0, activebackground='#EAE8DC' ,command=lambda: controller.mostrar_ventana(Ventana_1)).place(x=25, y=600)
+
+        self.menu_emergente = tk.Menu(self, tearoff=0, font=("Arial", 10), fg="#0E3746", bg="white")
+        self.menu_emergente.add_command(label="Crear registro", command=self.opcion1)
+        self.menu_emergente.add_command(label="Abrir registro", command=self.opcion2)
+        self.menu_emergente.add_command(label="Actualizar registro", command=self.opcion3)
+
+    def desplegar_menu(self):
+        x = self.boton2.winfo_rootx()
+        y = self.boton2.winfo_rooty() + self.boton2.winfo_height()
+        desplazamiento_x = 60
+        desplazamiento_y = 10
+        x += desplazamiento_x
+        y += desplazamiento_y
+        self.menu_emergente.tk_popup(x, y)
+
+    def opcion1(self):
+        print("Opción 1 seleccionada")
+        self.controller.mostrar_ventana(Ventana_5)
+
+    def opcion2(self):
+        print("Opción 2 seleccionada")
+        self.controller.mostrar_ventana(Ventana_4)
+
+    def opcion3(self):
+        print("Opción 3 seleccionada")
+        self.controller.mostrar_ventana(Ventana_6)
+
+if __name__ == "__main__":
+    app = JYDHI()
+    app.mainloop()
